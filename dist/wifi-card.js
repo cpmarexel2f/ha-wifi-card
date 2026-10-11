@@ -8,12 +8,14 @@ var WifiQrI18n = {
     network: 'Réseau',
     password: 'Mot de passe',
     hint: 'Scannez le QR code pour vous connecter',
+    zoom: 'Agrandir le QR code',
   },
   en: {
     default_title: 'Guest WiFi',
     network: 'Network',
     password: 'Password',
     hint: 'Scan the QR code to connect automatically',
+    zoom: 'Enlarge QR code',
   },
 };
 
@@ -54,37 +56,32 @@ class WifiQrCard extends HTMLElement {
       password: config.password,
       security: config.security || 'WPA',
       title: config.title || this._t('default_title'),
-      qr_size: config.qr_size || 180,
+      qr_size: Number(config.qr_size) || 200,
     };
     this._render();
   }
 
   _buildQrSvg(text, size) {
-    let typeNumber = 1;
-    for (let t = 1; t <= 40; t++) {
+    let qr = null;
+    for (let t = 1; t <= 40 && !qr; t++) {
       try {
         const q = new QRCodeModel(t, QRErrorCorrectLevel.M);
         q.addData(text);
         q.make();
-        typeNumber = t;
-        break;
+        qr = q;
       } catch(e) { continue; }
     }
-    const qr = new QRCodeModel(typeNumber, QRErrorCorrectLevel.M);
-    qr.addData(text);
-    qr.make();
+    if (!qr) throw new Error('WiFi data is too long for a QR code');
     const n = qr.getModuleCount();
-    const cell = Math.floor(size / n);
-    const dim = cell * n;
-    let rects = '';
+    const quiet = 4; // quiet zone required by the QR spec, in modules
+    const dim = n + quiet * 2;
+    let d = '';
     for (let r = 0; r < n; r++) {
       for (let c = 0; c < n; c++) {
-        if (qr.isDark(r, c)) {
-          rects += `<rect x="${c*cell}" y="${r*cell}" width="${cell}" height="${cell}"/>`;
-        }
+        if (qr.isDark(r, c)) d += `M${c + quiet} ${r + quiet}h1v1h-1z`;
       }
     }
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${dim}" height="${dim}" viewBox="0 0 ${dim} ${dim}" shape-rendering="crispEdges"><rect width="${dim}" height="${dim}" fill="#fff"/><g fill="#000">${rects}</g></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${dim} ${dim}" shape-rendering="crispEdges" role="img" aria-label="QR code"><rect width="${dim}" height="${dim}" fill="#fff"/><path fill="#000" d="${d}"/></svg>`;
   }
 
   _render() {
@@ -98,7 +95,11 @@ class WifiQrCard extends HTMLElement {
         .header { display: flex; align-items: center; gap: 8px; align-self: flex-start; width: 100%; }
         .title { font-size: 16px; font-weight: 500; color: var(--primary-text-color); }
         ha-icon { color: var(--secondary-text-color); --mdc-icon-size: 22px; }
-        .qr-wrap { background: #fff; border-radius: 8px; padding: 8px; line-height: 0; }
+        .qr-wrap { background: #fff; border-radius: 8px; overflow: hidden; line-height: 0; max-width: 100%; cursor: zoom-in; }
+        .qr-wrap svg { max-width: 100%; height: auto; }
+        dialog { border: none; padding: 0; margin: auto; background: #fff; border-radius: 12px; line-height: 0; overflow: hidden; cursor: zoom-out; }
+        dialog::backdrop { background: rgba(0,0,0,0.85); }
+        dialog svg { width: min(90vw, 90vh); height: auto; display: block; }
         .info-block { width: 100%; display: flex; flex-direction: column; gap: 8px; }
         .info-row { background: var(--secondary-background-color, rgba(128,128,128,0.1)); border-radius: 8px; padding: 10px 14px; }
         .lbl { font-size: 11px; color: var(--secondary-text-color); margin-bottom: 2px; }
@@ -112,7 +113,8 @@ class WifiQrCard extends HTMLElement {
           <ha-icon icon="mdi:wifi"></ha-icon>
           <span class="title">${c.title}</span>
         </div>
-        <div class="qr-wrap">${svg}</div>
+        <div class="qr-wrap" id="qr" role="button" tabindex="0" title="${this._t('zoom')}" aria-label="${this._t('zoom')}">${svg}</div>
+        <dialog id="zoom" aria-label="${this._t('zoom')}">${svg}</dialog>
         <div class="info-block">
           <div class="info-row">
             <div class="lbl">${this._t('network')}</div>
@@ -135,6 +137,14 @@ class WifiQrCard extends HTMLElement {
       this.shadowRoot.getElementById('pwd').textContent = shown ? c.password : '••••••••••••••••';
       this.shadowRoot.getElementById('ico').setAttribute('icon', shown ? 'mdi:eye-off' : 'mdi:eye');
     };
+
+    const qr = this.shadowRoot.getElementById('qr');
+    const dlg = this.shadowRoot.getElementById('zoom');
+    const open = () => { if (!dlg.open) dlg.showModal(); };
+    qr.onclick = open;
+    qr.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
+    // Escape is handled natively by <dialog>; a click anywhere (QR or backdrop) closes it
+    dlg.onclick = () => dlg.close();
   }
 
   getCardSize() { return 4; }

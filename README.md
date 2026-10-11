@@ -73,7 +73,7 @@ qr_size: 200
 | `password` | ✅ | — | WiFi password |
 | `security` | ❌ | `WPA` | Security type: `WPA`, `WEP`, or `nopass` |
 | `title` | ❌ | Auto (i18n) | Card title |
-| `qr_size` | ❌ | `180` | QR code size in pixels |
+| `qr_size` | ❌ | `200` | QR code size in pixels (quiet zone included) |
 | `language` | ❌ | Auto | Force language: `fr` or `en` (auto-detects from HA settings) |
 
 ## How it works
