@@ -2,23 +2,23 @@
 
 ## 1.2.0
 
-### Nouveautés
-- Éditeur visuel de la carte : titre, SSID, mot de passe, sécurité, taille du QR code et langue, sans passer par le YAML. Libellés en français et en anglais.
-- Sécurité WPA3 (`SAE`) proposée dans l'éditeur.
-- Réseau ouvert (`security: nopass`) : le mot de passe n'est plus obligatoire et la carte affiche « Réseau ouvert » à la place.
-- Aperçu de la carte dans le sélecteur de cartes.
+### What's new
+- Visual editor for the card: title, SSID, password, security, QR code size and language, no YAML needed. Labels in English and French.
+- WPA3 (`SAE`) security available in the editor.
+- Open networks (`security: nopass`): the password is no longer required and the card shows "Open network" instead.
+- Card preview in the card picker.
 
 ## 1.1.0
 
-### Nouveautés
-- Clic ou appui sur le QR code pour l'afficher en plein écran (nouveau clic, clic à côté ou Échap pour fermer), accessible au clavier avec Entrée ou Espace.
-- Taille par défaut `qr_size` de 200 px, zone blanche incluse, comme la carte Wero.
+### What's new
+- Click or tap the QR code to show it full screen (click again, click outside or press Escape to close), keyboard accessible with Enter or Space.
+- Default `qr_size` is now 200 px, quiet zone included, like the Wero card.
 
 ## 1.0.0
 
-Première version publique.
+First public release.
 
-- QR code WiFi généré en JavaScript pur, sans dépendance ni CDN.
-- Mot de passe masqué par défaut, affichable d'un clic.
-- Langue détectée depuis Home Assistant (français / anglais).
-- Compatible thème clair et sombre, installable via HACS.
+- WiFi QR code generated in pure JavaScript, no dependencies, no CDN.
+- Password hidden by default, revealable with one click.
+- Language detected from Home Assistant (English / French).
+- Light and dark theme compatible, installable via HACS.
