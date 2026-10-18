@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.1
+
+### Changes
+- New WiFi logo in the card header: white waves on a blue rounded square.
+
 ## 1.3.0
 
 ### What's new
