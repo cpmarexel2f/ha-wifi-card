@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.0
+
+### Changes
+- The QR code background now uses the same blue as the WiFi logo, like the Wero card does with its yellow.
+
 ## 1.3.1
 
 ### Changes
