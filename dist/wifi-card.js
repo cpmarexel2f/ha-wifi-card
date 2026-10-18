@@ -1,5 +1,5 @@
-var WIFI_QR_CARD_VERSION = '1.4.0';
-var WIFI_BLUE = '#1E88E5';
+var WIFI_QR_CARD_VERSION = '1.4.1';
+var WIFI_BLUE = '#64B5F6';
 
 // ── WiFi badge (original artwork: rounded-cap waves on a blue rounded square) ─
 var WIFI_LOGO = '<svg class="logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" role="img" aria-label="WiFi"><rect width="36" height="36" rx="8" fill="' + WIFI_BLUE + '"/><g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M13.76 21.76A6 6 0 0 1 22.24 21.76"/><path d="M10.22 18.22A11 11 0 0 1 25.78 18.22"/><path d="M6.69 14.69A16 16 0 0 1 29.31 14.69"/></g><circle cx="18" cy="26.5" r="2.4" fill="#fff"/></svg>';
@@ -327,5 +327,5 @@ if (!customElements.get('wifi-qr-card')) {
     preview: true,
     documentationURL: 'https://github.com/juju35/ha-wifi-card',
   });
-  console.info('%c WIFI-QR-CARD %c v' + WIFI_QR_CARD_VERSION + ' ', 'color:#fff;background:#1E88E5;font-weight:700', 'color:#1E88E5;background:#fff');
+  console.info('%c WIFI-QR-CARD %c v' + WIFI_QR_CARD_VERSION + ' ', 'color:#fff;background:#1976D2;font-weight:700', 'color:#1976D2;background:#fff');
 }

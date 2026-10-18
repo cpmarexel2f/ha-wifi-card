@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.1
+
+### Changes
+- Lighter blue for the WiFi logo and the QR code background; the QR code also scans more reliably at small sizes.
+
 ## 1.4.0
 
 ### Changes
