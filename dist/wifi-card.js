@@ -1,4 +1,4 @@
-var WIFI_QR_CARD_VERSION = '1.4.1';
+var WIFI_QR_CARD_VERSION = '1.4.2';
 var WIFI_BLUE = '#64B5F6';
 
 // ── WiFi badge (original artwork: rounded-cap waves on a blue rounded square) ─

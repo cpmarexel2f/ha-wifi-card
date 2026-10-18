@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.2
+
+### Fixes
+- The card now fills the full height of its slot, so it lines up with its neighbours in a horizontal stack or grid; content stays centered vertically.
+
 ## 1.4.1
 
 ### Changes
