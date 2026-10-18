@@ -8,6 +8,9 @@
 - Open networks (`security: nopass`): the password is no longer required and the card shows "Open network" instead.
 - Card preview in the card picker.
 
+### Maintenance
+- Releases are now published automatically from this changelog when the version is bumped.
+
 ## 1.1.0
 
 ### What's new
@@ -18,6 +21,7 @@
 
 First public release.
 
+### What's new
 - WiFi QR code generated in pure JavaScript, no dependencies, no CDN.
 - Password hidden by default, revealable with one click.
 - Language detected from Home Assistant (English / French).
