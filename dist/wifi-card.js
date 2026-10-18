@@ -9,6 +9,21 @@ var WifiQrI18n = {
     password: 'Mot de passe',
     hint: 'Scannez le QR code pour vous connecter',
     zoom: 'Agrandir le QR code',
+    open_network: 'Réseau ouvert (sans mot de passe)',
+    ed_title: 'Titre',
+    ed_ssid: 'Nom du réseau (SSID)',
+    ed_password: 'Mot de passe',
+    ed_security: 'Sécurité',
+    ed_qr_size: 'Taille du QR code',
+    ed_language: 'Langue',
+    ed_title_helper: 'Laisser vide pour le titre par défaut',
+    ed_password_helper: 'Inutile si la sécurité est « Aucune »',
+    ed_qr_size_helper: 'Zone blanche incluse — 200 px par défaut',
+    ed_language_helper: 'Laisser vide pour suivre la langue de Home Assistant',
+    sec_wpa: 'WPA / WPA2',
+    sec_sae: 'WPA3 (SAE)',
+    sec_wep: 'WEP',
+    sec_nopass: 'Aucune (réseau ouvert)',
   },
   en: {
     default_title: 'Guest WiFi',
@@ -16,14 +31,42 @@ var WifiQrI18n = {
     password: 'Password',
     hint: 'Scan the QR code to connect automatically',
     zoom: 'Enlarge QR code',
+    open_network: 'Open network (no password)',
+    ed_title: 'Title',
+    ed_ssid: 'Network name (SSID)',
+    ed_password: 'Password',
+    ed_security: 'Security',
+    ed_qr_size: 'QR code size',
+    ed_language: 'Language',
+    ed_title_helper: 'Leave empty for the default title',
+    ed_password_helper: 'Not needed when security is "None"',
+    ed_qr_size_helper: 'Quiet zone included — defaults to 200 px',
+    ed_language_helper: 'Leave empty to follow the Home Assistant language',
+    sec_wpa: 'WPA / WPA2',
+    sec_sae: 'WPA3 (SAE)',
+    sec_wep: 'WEP',
+    sec_nopass: 'None (open network)',
   },
 };
 
+function wifiQrT(lang, key) {
+  var strings = WifiQrI18n[lang] || WifiQrI18n['en'];
+  return strings[key] || WifiQrI18n['en'][key] || key;
+}
+
 // ── wifi-qr-card ──────────────────────────────────────────────────────────────
 class WifiQrCard extends HTMLElement {
+  static getConfigElement() {
+    return document.createElement('wifi-qr-card-editor');
+  }
+
+  static getStubConfig() {
+    return { ssid: 'MyNetwork-Guest', password: 'MySecretPassword', security: 'WPA' };
+  }
+
   setConfig(config) {
     if (!config.ssid) throw new Error('ssid is required');
-    if (!config.password) throw new Error('password is required');
+    if (!config.password && config.security !== 'nopass') throw new Error('password is required');
     this._configRaw = config;
     if (!this.shadowRoot) this.attachShadow({ mode: 'open' });
     this._applyConfig();
@@ -44,16 +87,14 @@ class WifiQrCard extends HTMLElement {
   }
 
   _t(key) {
-    var lang = this._getLang();
-    var strings = WifiQrI18n[lang] || WifiQrI18n['en'];
-    return strings[key] || WifiQrI18n['en'][key] || key;
+    return wifiQrT(this._getLang(), key);
   }
 
   _applyConfig() {
     var config = this._configRaw;
     this._config = {
       ssid: config.ssid,
-      password: config.password,
+      password: config.password || '',
       security: config.security || 'WPA',
       title: config.title || this._t('default_title'),
       qr_size: Number(config.qr_size) || 200,
@@ -86,7 +127,8 @@ class WifiQrCard extends HTMLElement {
 
   _render() {
     const c = this._config;
-    const wifiStr = `WIFI:T:${c.security};S:${c.ssid};P:${c.password};;`;
+    const isOpen = c.security === 'nopass';
+    const wifiStr = `WIFI:T:${c.security};S:${c.ssid};P:${isOpen ? '' : c.password};;`;
     const svg = this._buildQrSvg(wifiStr, c.qr_size);
 
     this.shadowRoot.innerHTML = `
@@ -122,21 +164,25 @@ class WifiQrCard extends HTMLElement {
           </div>
           <div class="info-row">
             <div class="lbl">${this._t('password')}</div>
-            <div class="pwd-row">
+            ${isOpen
+              ? `<div class="val">${this._t('open_network')}</div>`
+              : `<div class="pwd-row">
               <div class="val" id="pwd">••••••••••••••••</div>
               <button id="btn"><ha-icon icon="mdi:eye" id="ico"></ha-icon></button>
-            </div>
+            </div>`}
           </div>
         </div>
         <div class="hint">${this._t('hint')}</div>
       </ha-card>`;
 
-    let shown = false;
-    this.shadowRoot.getElementById('btn').onclick = () => {
-      shown = !shown;
-      this.shadowRoot.getElementById('pwd').textContent = shown ? c.password : '••••••••••••••••';
-      this.shadowRoot.getElementById('ico').setAttribute('icon', shown ? 'mdi:eye-off' : 'mdi:eye');
-    };
+    if (!isOpen) {
+      let shown = false;
+      this.shadowRoot.getElementById('btn').onclick = () => {
+        shown = !shown;
+        this.shadowRoot.getElementById('pwd').textContent = shown ? c.password : '••••••••••••••••';
+        this.shadowRoot.getElementById('ico').setAttribute('icon', shown ? 'mdi:eye-off' : 'mdi:eye');
+      };
+    }
 
     const qr = this.shadowRoot.getElementById('qr');
     const dlg = this.shadowRoot.getElementById('zoom');
@@ -150,6 +196,119 @@ class WifiQrCard extends HTMLElement {
   getCardSize() { return 4; }
 }
 
+// ── wifi-qr-card-editor (visual editor, built on HA's ha-form) ───────────────
+class WifiQrCardEditor extends HTMLElement {
+  setConfig(config) {
+    this._config = Object.assign({}, config);
+    this._render();
+  }
+
+  set hass(hass) {
+    var prevLang = this._hass && this._hass.language;
+    this._hass = hass;
+    if (this._form && prevLang === (hass && hass.language)) {
+      this._form.hass = hass;
+    } else {
+      this._render();
+    }
+  }
+
+  _lang() {
+    var lang = this._hass && this._hass.language ? this._hass.language.split('-')[0] : 'en';
+    return WifiQrI18n[lang] ? lang : 'en';
+  }
+
+  _schema() {
+    var t = (k) => wifiQrT(this._lang(), k);
+    return [
+      { name: 'title', selector: { text: {} } },
+      { name: 'ssid', required: true, selector: { text: {} } },
+      { name: 'password', selector: { text: { type: 'password' } } },
+      {
+        type: 'grid',
+        name: '',
+        schema: [
+          {
+            name: 'security',
+            selector: {
+              select: {
+                mode: 'dropdown',
+                options: [
+                  { value: 'WPA', label: t('sec_wpa') },
+                  { value: 'SAE', label: t('sec_sae') },
+                  { value: 'WEP', label: t('sec_wep') },
+                  { value: 'nopass', label: t('sec_nopass') },
+                ],
+              },
+            },
+          },
+          {
+            name: 'qr_size',
+            selector: { number: { min: 100, max: 600, step: 10, mode: 'box', unit_of_measurement: 'px' } },
+          },
+        ],
+      },
+      {
+        name: 'language',
+        selector: {
+          select: {
+            mode: 'dropdown',
+            options: [
+              { value: 'fr', label: 'Français' },
+              { value: 'en', label: 'English' },
+            ],
+          },
+        },
+      },
+    ];
+  }
+
+  _render() {
+    if (!this._config || !this._hass) return;
+    if (!this._form) {
+      this._form = document.createElement('ha-form');
+      this._form.addEventListener('value-changed', (ev) => this._valueChanged(ev));
+      this.appendChild(this._form);
+    }
+    var lang = this._lang();
+    this._form.hass = this._hass;
+    this._form.schema = this._schema();
+    this._form.computeLabel = (s) => wifiQrT(lang, 'ed_' + s.name);
+    this._form.computeHelper = (s) => {
+      var key = 'ed_' + s.name + '_helper';
+      var txt = wifiQrT(lang, key);
+      return txt === key ? undefined : txt;
+    };
+    this._form.data = Object.assign({ security: 'WPA' }, this._config);
+  }
+
+  _valueChanged(ev) {
+    ev.stopPropagation();
+    var value = Object.assign({}, ev.detail.value);
+    // Drop cleared optional fields so the YAML stays minimal
+    Object.keys(value).forEach((k) => {
+      if (value[k] === '' || value[k] === null || value[k] === undefined) delete value[k];
+    });
+    if (value.security === 'WPA' && !('security' in this._config)) delete value.security;
+    if (value.security === 'nopass') delete value.password;
+    if (this._config.type) value = Object.assign({ type: this._config.type }, value);
+    this._config = value;
+    this._form.data = Object.assign({ security: 'WPA' }, this._config);
+    this.dispatchEvent(new CustomEvent('config-changed', {
+      detail: { config: this._config },
+      bubbles: true,
+      composed: true,
+    }));
+  }
+}
+
 customElements.define('wifi-qr-card', WifiQrCard);
+customElements.define('wifi-qr-card-editor', WifiQrCardEditor);
 window.customCards = window.customCards || [];
-window.customCards.push({ type: 'wifi-qr-card', name: 'Wifi QR Card', description: 'QR code WiFi — no CDN' });
+window.customCards.push({
+  type: 'wifi-qr-card',
+  name: 'Wifi QR Card',
+  description: 'QR code WiFi — no CDN',
+  preview: true,
+  documentationURL: 'https://github.com/juju35/ha-wifi-card',
+});

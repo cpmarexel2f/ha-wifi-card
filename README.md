@@ -16,9 +16,10 @@ Custom Lovelace card for Home Assistant that displays a WiFi QR code for easy gu
 
 - QR code generated in pure JS (embedded Reed-Solomon algorithm)
 - Password hidden by default, revealable with a toggle button
+- Visual editor in the dashboard UI (no YAML needed)
 - Fully compatible with Home Assistant dark mode
 - HACS-ready
-- Single file, lightweight (~9 KB)
+- Single file, lightweight (~23 KB)
 
 ## Installation
 
@@ -46,6 +47,10 @@ Or manually:
 
 ## Configuration
 
+### Visual editor
+
+Add the card from the dashboard (**Add card → Wifi QR Card**) and fill in the fields: title, SSID, password, security, QR code size and language. The preview updates live, and empty optional fields are left out of the generated YAML.
+
 ### Minimal
 
 ```yaml
@@ -70,8 +75,8 @@ qr_size: 200
 | Option | Required | Default | Description |
 |---|---|---|---|
 | `ssid` | ✅ | — | WiFi network name (SSID) |
-| `password` | ✅ | — | WiFi password |
-| `security` | ❌ | `WPA` | Security type: `WPA`, `WEP`, or `nopass` |
+| `password` | ✅* | — | WiFi password (*not needed when `security: nopass`) |
+| `security` | ❌ | `WPA` | Security type: `WPA` (WPA/WPA2), `SAE` (WPA3), `WEP`, or `nopass` (open network) |
 | `title` | ❌ | Auto (i18n) | Card title |
 | `qr_size` | ❌ | `200` | QR code size in pixels (quiet zone included) |
 | `language` | ❌ | Auto | Force language: `fr` or `en` (auto-detects from HA settings) |
