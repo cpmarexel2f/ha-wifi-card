@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.4.3
+
+### Changes
+- When the card is stretched to match a taller neighbour, its content now sits at the top instead of being centered vertically.
+
 ## 1.4.2
 
 ### Fixes

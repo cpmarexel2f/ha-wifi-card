@@ -1,4 +1,4 @@
-var WIFI_QR_CARD_VERSION = '1.4.2';
+var WIFI_QR_CARD_VERSION = '1.4.3';
 var WIFI_BLUE = '#64B5F6';
 
 // ── WiFi badge (original artwork: rounded-cap waves on a blue rounded square) ─
@@ -143,7 +143,7 @@ class WifiQrCard extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>
         :host { display: block; height: 100%; }
-        ha-card { height: 100%; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+        ha-card { height: 100%; box-sizing: border-box; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; }
         .header { display: flex; align-items: center; gap: 10px; align-self: flex-start; width: 100%; }
         .logo { height: 26px; width: 26px; display: block; flex-shrink: 0; }
         .title { font-size: 16px; font-weight: 500; color: var(--primary-text-color); }
