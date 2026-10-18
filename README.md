@@ -49,7 +49,7 @@ Or manually:
 
 ### Visual editor
 
-Add the card from the dashboard (**Add card → Wifi QR Card**) and fill in the fields: title, SSID, password, security, QR code size and language. The preview updates live, and empty optional fields are left out of the generated YAML.
+Add the card from the dashboard (**Add card → Wifi QR Card**) and fill in the fields: title, logo, SSID, password, security, QR code size and language. The preview updates live, and empty optional fields are left out of the generated YAML.
 
 ### Minimal
 
@@ -64,6 +64,7 @@ password: MySecretPassword
 ```yaml
 type: custom:wifi-qr-card
 title: Wifi invité
+logo: true
 ssid: MyNetwork-Guest
 password: MySecretPassword
 security: WPA
@@ -78,6 +79,7 @@ qr_size: 200
 | `password` | ✅* | — | WiFi password (*not needed when `security: nopass`) |
 | `security` | ❌ | `WPA` | Security type: `WPA` (WPA/WPA2), `SAE` (WPA3), `WEP`, or `nopass` (open network) |
 | `title` | ❌ | Auto (i18n) | Card title |
+| `logo` | ❌ | `true` | Show the WiFi logo in the header (`false` shows a plain `mdi:wifi` icon) |
 | `qr_size` | ❌ | `200` | QR code size in pixels (quiet zone included) |
 | `language` | ❌ | Auto | Force language: `fr` or `en` (auto-detects from HA settings) |
 

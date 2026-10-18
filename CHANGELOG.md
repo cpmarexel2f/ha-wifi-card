@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0
+
+### What's new
+- WiFi logo in the card header, like the Wero card. Turn it off with `logo: false` or from the visual editor to get the plain `mdi:wifi` icon back.
+
 ## 1.2.0
 
 ### What's new
