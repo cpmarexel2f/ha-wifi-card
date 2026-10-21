@@ -3,7 +3,7 @@
 ## 1.5.0
 
 ### Changes
-- Header aligned with the other juju35 cards: 40px logo, title 18px with the network security as subtitle.
+- Header aligned with the other ha-* cards: 40px logo, title 18px with the network security as subtitle.
 - Rounded corners, spacing and label sizes aligned with the other cards; the network name and password use the theme's code font.
 - Card size in the Sections view (`getGridOptions`).
 - The title and network name are escaped before being displayed.
