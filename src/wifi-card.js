@@ -92,6 +92,20 @@ function wifiQrString(c) {
   return `WIFI:T:${c.security};S:${wifiQrField(c.ssid)};P:${isOpen ? '' : wifiQrField(c.password)};;`;
 }
 
+// Smallest QR version (level M, single 8-bit segment) whose data area fits `bytes`
+// bytes, computed from the library's own RS block table. Lets _buildQrSvg start at
+// the right version instead of building and discarding up to 39 undersized models.
+function wifiQrMinVersion(bytes) {
+  for (var t = 1; t <= 40; t++) {
+    var blocks = QRRSBlock.getRSBlocks(t, QRErrorCorrectLevel.M);
+    var capacity = 0;
+    for (var i = 0; i < blocks.length; i++) capacity += blocks[i].dataCount;
+    // 4 mode bits + the version-dependent length field, then the payload itself.
+    if (4 + QRUtil.getLengthInBits(4, t) + bytes * 8 <= capacity * 8) return t;
+  }
+  return 40;
+}
+
 // ── wifi-qr-card ──────────────────────────────────────────────────────────────
 class WifiQrCard extends HTMLElement {
   static getConfigElement() {
@@ -153,8 +167,10 @@ class WifiQrCard extends HTMLElement {
   }
 
   _buildQrSvg(text, size) {
+    // UTF-8 byte length, exactly as QR8bitByte counts it.
+    const bytes = unescape(encodeURIComponent(text)).length;
     let qr = null;
-    for (let t = 1; t <= 40 && !qr; t++) {
+    for (let t = wifiQrMinVersion(bytes); t <= 40 && !qr; t++) {
       try {
         const q = new QRCodeModel(t, QRErrorCorrectLevel.M);
         q.addData(text);
@@ -372,7 +388,14 @@ class WifiQrCardEditor extends HTMLElement {
     Object.keys(WIFI_QR_EDITOR_DEFAULTS).forEach((key) => {
       if (value[key] === WIFI_QR_EDITOR_DEFAULTS[key]) delete value[key];
     });
-    if (value.security === 'nopass') delete value.password;
+    // Switching to an open network drops the password from the config, but keep it
+    // in memory so switching back to WPA/SAE/WEP does not force retyping it.
+    if (value.security === 'nopass') {
+      if (value.password) this._stashedPassword = value.password;
+      delete value.password;
+    } else if (!value.password && this._stashedPassword) {
+      value.password = this._stashedPassword;
+    }
     if (this._config.type) value = Object.assign({ type: this._config.type }, value);
     this._config = value;
     this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: value }, bubbles: true, composed: true }));
