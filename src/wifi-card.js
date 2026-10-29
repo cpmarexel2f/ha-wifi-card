@@ -1,4 +1,7 @@
 var WIFI_QR_CARD_VERSION = '__VERSION__';
+// Fixed on purpose, not a theme variable: it is the QR code background, which must stay light
+// behind the black modules to scan reliably whatever the theme (dark themes included), and the
+// header badge reuses it as the card's brand colour, like the Wero card's yellow.
 var WIFI_BLUE = '#64B5F6';
 
 // ── WiFi icon (original artwork: rounded-cap waves), shown in the round header badge ─
@@ -183,15 +186,17 @@ class WifiQrCard extends HTMLElement {
   }
 
   set hass(hass) {
-    var prevLang = this._hassLang;
+    var prevLang = this._configRaw ? this._getLang() : null;
     // Normalise a regional locale (fr-BE, en-GB…) to its base, like the editor and document lang do,
     // so WifiQrI18n is matched instead of silently falling back to English.
     this._hassLang = hass?.language ? hass.language.split('-')[0] : null;
-    if (this._configRaw && prevLang !== this._hassLang) this._applyConfig();
+    // Re-render only when the language actually shown changes (not with a forced `language`).
+    if (this._configRaw && prevLang !== this._getLang()) this._applyConfig();
   }
 
   _getLang() {
-    if (this._configRaw?.language) return this._configRaw.language;
+    // Normalise a forced language the same way as the HA locale (de-AT, es-MX, FR → de, es, fr).
+    if (this._configRaw?.language) return String(this._configRaw.language).toLowerCase().split('-')[0];
     if (this._hassLang) return this._hassLang;
     var docLang = document.documentElement.lang;
     if (docLang) return docLang.split('-')[0];
@@ -247,6 +252,8 @@ class WifiQrCard extends HTMLElement {
   _render(strict) {
     const c = this._config;
     const isOpen = c.security === 'nopass';
+    // A re-render (language or config change) keeps the zoom open and the password revealed.
+    const wasZoomed = !!this.shadowRoot.getElementById?.('zoom')?.open;
     let svg;
     try {
       svg = this._buildQrSvg(wifiQrString(c), c.qr_size || 176);
@@ -271,7 +278,7 @@ class WifiQrCard extends HTMLElement {
         ha-icon { color: var(--secondary-text-color); --mdc-icon-size: 22px; }
         .qr-wrap { background: ${WIFI_BLUE}; border-radius: 10px; overflow: hidden; line-height: 0; max-width: 100%; cursor: zoom-in; }
         .qr-wrap svg { max-width: 100%; height: auto; width: ${c.qr_size ? `${c.qr_size}px` : '176px'}; }
-        dialog { border: none; padding: 0; margin: auto; background: ${WIFI_BLUE}; border-radius: 12px; line-height: 0; overflow: hidden; cursor: zoom-out; }
+        dialog { border: none; padding: 0; margin: 8px auto auto; background: ${WIFI_BLUE}; border-radius: 12px; line-height: 0; overflow: hidden; cursor: zoom-out; }
         dialog::backdrop { background: rgba(0,0,0,0.85); }
         dialog svg { width: min(90vw, 90vh); height: auto; display: block; }
         .info-block { width: 100%; display: flex; flex-direction: column; gap: 6px; }
@@ -311,24 +318,38 @@ class WifiQrCard extends HTMLElement {
       </ha-card>`;
 
     if (!isOpen) {
-      let shown = false;
       const btn = this.shadowRoot.getElementById('btn');
-      btn.onclick = () => {
-        shown = !shown;
+      // The password only ever reaches the DOM through textContent, never the innerHTML above.
+      const show = () => {
+        const shown = !!this._pwdShown;
         btn.setAttribute('aria-pressed', String(shown));
         btn.setAttribute('aria-label', this._t(shown ? 'hide_password' : 'show_password'));
         this.shadowRoot.getElementById('pwd').textContent = shown ? c.password : '••••••••••••••••';
         this.shadowRoot.getElementById('ico').setAttribute('icon', shown ? 'mdi:eye-off' : 'mdi:eye');
       };
+      btn.onclick = () => {
+        this._pwdShown = !this._pwdShown;
+        show();
+      };
+      if (this._pwdShown) show();
     }
 
     const qr = this.shadowRoot.getElementById('qr');
     const dlg = this.shadowRoot.getElementById('zoom');
-    const open = () => { if (!dlg.open) dlg.showModal(); };
+    const open = () => {
+      if (dlg.open) return;
+      dlg.showModal();
+      // Like the other ha-* popups: aligned on the top of the card instead of centred in the
+      // viewport, and kept fully on screen when the card is scrolled out of view.
+      const top = this.getBoundingClientRect().top;
+      const max = window.innerHeight - dlg.offsetHeight - 8;
+      dlg.style.marginTop = `${Math.max(8, Math.min(top, max))}px`;
+    };
     qr.onclick = open;
     qr.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } };
     // Escape is handled natively by <dialog>; a click anywhere (QR or backdrop) closes it
     dlg.onclick = () => dlg.close();
+    if (wasZoomed) open();
   }
 
   getCardSize() { return 4; }
@@ -357,6 +378,8 @@ class WifiQrCardEditor extends HTMLElement {
     }
   }
 
+  // The editor follows the Home Assistant UI language, like the built-in card editors; the card's
+  // `language` option only sets the language of the card itself (shown in the preview).
   _lang() {
     var lang = this._hass?.language ? this._hass.language.split('-')[0] : 'en';
     return WifiQrI18n[lang] ? lang : 'en';
@@ -442,11 +465,16 @@ class WifiQrCardEditor extends HTMLElement {
     });
     // Switching to an open network drops the password from the config, but keep it
     // in memory so switching back to WPA/SAE/WEP does not force retyping it.
+    // Restore it once, only on the nopass → WPA/SAE/WEP transition, then forget it, so the
+    // password field can still be cleared afterwards.
     if (value.security === 'nopass') {
       if (value.password) this._stashedPassword = value.password;
       delete value.password;
-    } else if (!value.password && this._stashedPassword) {
-      value.password = this._stashedPassword;
+    } else {
+      if (this._config?.security === 'nopass' && !value.password && this._stashedPassword) {
+        value.password = this._stashedPassword;
+      }
+      this._stashedPassword = null;
     }
     if (this._config.type) value = Object.assign({ type: this._config.type }, value);
     this._config = value;
@@ -464,7 +492,7 @@ if (!customElements.get('wifi-qr-card')) {
   window.customCards.push({
     type: 'wifi-qr-card',
     name: 'Wifi QR Card',
-    description: 'QR code WiFi — no CDN',
+    description: 'WiFi QR code — no CDN',
     preview: true,
     documentationURL: 'https://github.com/juju35/ha-wifi-card',
   });
