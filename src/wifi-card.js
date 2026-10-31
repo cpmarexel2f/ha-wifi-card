@@ -431,8 +431,8 @@ class WifiQrCardEditor extends HTMLElement {
   // The editor follows the Home Assistant UI language, like the built-in card editors; the card's
   // `language` option only sets the language of the card itself (shown in the preview).
   _lang() {
-    var lang = this._hass?.language ? this._hass.language.split('-')[0] : 'en';
-    return WifiQrI18n[lang] ? lang : 'en';
+    var raw = this._hass?.language ? this._hass.language : 'en';
+    return WifiQrI18n[raw] ? raw : (WifiQrI18n[raw.split('-')[0]] ? raw.split('-')[0] : 'en');
   }
 
   _schema() {
